@@ -56,14 +56,25 @@ export default function SkyPixelEngine() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordProgress, setRecordProgress] = useState(0);
   const [savedImages, setSavedImages] = useState<SavedImage[]>([]);
+  const [galleryError, setGalleryError] = useState<string | null>(null);
+  const [isGalleryLoading, setIsGalleryLoading] = useState(false);
   
   const mouseRef = useRef({ x: 0, y: 0, active: false });
   const requestRef = useRef<number>(null);
 
   useEffect(() => {
     const loadSaved = async () => {
-      const saved = await getSavedImages();
-      setSavedImages(saved);
+      setIsGalleryLoading(true);
+      setGalleryError(null);
+      try {
+        const saved = await getSavedImages();
+        setSavedImages(saved);
+      } catch (error: any) {
+        console.error("Gallery load error:", error);
+        setGalleryError(error.message || "Failed to connect to database");
+      } finally {
+        setIsGalleryLoading(false);
+      }
     };
     loadSaved();
   }, []);
@@ -589,12 +600,29 @@ export default function SkyPixelEngine() {
                     </div>
 
                     {/* Saved Images Gallery */}
-                    {savedImages.length > 0 && (
-                      <div className="space-y-3">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <History className="w-3 h-3 text-primary" />
                           <Label className="text-[10px] uppercase tracking-[0.2em] text-white/40">Memory Bank</Label>
                         </div>
+                        {isGalleryLoading && <RefreshCw className="w-3 h-3 text-primary animate-spin" />}
+                      </div>
+
+                      {galleryError ? (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-sm">
+                          <p className="text-[9px] text-red-400 font-mono leading-tight uppercase">
+                            Error: {galleryError}
+                          </p>
+                          <Button 
+                            variant="link" 
+                            className="h-auto p-0 text-[8px] text-red-400/60 uppercase mt-1"
+                            onClick={() => window.location.reload()}
+                          >
+                            Retry Connection
+                          </Button>
+                        </div>
+                      ) : savedImages.length > 0 ? (
                         <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                           {savedImages.map((img) => (
                             <div 
@@ -617,8 +645,12 @@ export default function SkyPixelEngine() {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      ) : !isGalleryLoading && (
+                        <div className="py-4 text-center border border-dashed border-white/5 rounded-sm">
+                          <span className="text-[9px] text-white/20 uppercase tracking-widest">No data in bank</span>
+                        </div>
+                      )}
+                    </div>
 
                     <div className="flex gap-3">
                       <Button 

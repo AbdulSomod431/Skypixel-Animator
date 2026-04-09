@@ -29,7 +29,8 @@ export async function saveImage(name: string, data: string): Promise<SavedImage>
 export async function getSavedImages(): Promise<SavedImage[]> {
   const response = await fetch("/api/images");
   if (!response.ok) {
-    return [];
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to fetch images from database");
   }
   return await response.json();
 }
