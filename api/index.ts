@@ -1,14 +1,8 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
-import path from "path";
-import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -33,7 +27,7 @@ app.get("/api/health", (req, res) => {
 
 app.get("/api/images", async (req, res) => {
   if (!supabase) {
-    return res.status(500).json({ error: "Supabase not configured. Please add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY." });
+    return res.status(500).json({ error: "Supabase not configured. Please add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to Vercel Environment Variables." });
   }
   try {
     const { data, error } = await supabase
@@ -86,29 +80,11 @@ app.delete("/api/images/:id", async (req, res) => {
   }
 });
 
-async function setupVite() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-}
-
-// Start server if running directly
-if (import.meta.url === `file://${process.argv[1]}` || process.env.NODE_ENV !== "production") {
-  setupVite().then(() => {
-    const PORT = 3000;
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
+// For local development
+if (process.env.NODE_ENV !== "production") {
+  const PORT = 3001; // Use a different port for the API in dev
+  app.listen(PORT, () => {
+    console.log(`API Server running on http://localhost:${PORT}`);
   });
 }
 
